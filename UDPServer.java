@@ -89,10 +89,15 @@ public class UDPServer implements Runnable{
                     if(count %2 ==1) {
                         String path = "src/DNS.dnsrelay.txt";
                         String word = "\n" + answerIpAddr.getHostAddress() + " " + ym;
+                        FileOutputStream wr =new FileOutputStream(path, true)
+                        FileChannel filechannel=wr.getChannel();
+                        FileLock lock=fileChannel.lock(0, Long.MAX_VALUE,true);
                         BufferedWriter out = new BufferedWriter(
-                                new OutputStreamWriter(new FileOutputStream(path, true)));
+                                new OutputStreamWriter(wr));
                         out.write(word);
                         out.close();
+                        Lock.release();
+                        filechannel.close();
                     }
                 }
 
@@ -104,15 +109,6 @@ public class UDPServer implements Runnable{
                 e.printStackTrace();
             }
             count++;
-            try {
-                if(fileLock!=null||channel!=null){
-                    fileLock.release();
-                    channel.close();
-                }
-                else{
-                    System.out.println("wrong");
-                }
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -124,8 +120,6 @@ public class UDPServer implements Runnable{
         HashMap<String, String> Sites = new HashMap<>(100);
         try {
             fis = new FileInputStream(file);
-            channel=fis.getChannel();
-            fileLock=channel.lock(0L, channel.size(), true);
             InputStreamReader isr = new InputStreamReader(fis);
             BufferedReader br = new BufferedReader(isr);
 
