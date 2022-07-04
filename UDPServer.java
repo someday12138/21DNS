@@ -3,7 +3,6 @@ import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
 import java.io.*;
 import java.net.*;
-import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.HashMap;
@@ -11,10 +10,7 @@ import java.util.HashMap;
 
 public class UDPServer implements Runnable{
     private static DatagramSocket socket;
-    private HashMap<String,String> map;
-    private FileLock fileLock;
-    private FileChannel channel;
-    private String fileName = "src/dnsrelay.txt";
+
     public UDPServer() {
         //设置socket，监听端口53
         try {
@@ -28,7 +24,7 @@ public class UDPServer implements Runnable{
         System.out.println("Starting......\n");
         int count=0;
         while (true) {
-            this.map=map();
+            HashMap<String, String> map = map();
             System.out.println("=======================");
             try {
                 byte[] buffer = new byte[1024];
@@ -74,7 +70,8 @@ public class UDPServer implements Runnable{
 
 
                 }
-                else{
+                else
+                {
                     InetAddress answerIpAddr = InetAddress.getByName(domain);
                     Message outdata = (Message)indata.clone();
                     //由于接收到的请求为A类型，因此应答也为ARecord。查看Record类的继承，发现还有AAAARecord(ipv6)，CNAMERecord等
@@ -86,17 +83,18 @@ public class UDPServer implements Runnable{
                     DatagramPacket response = new DatagramPacket(buf, buf.length, sourceIpAddr, sourcePort);
                     socket.send(response);
                     System.out.println("socket:"+socket);
-                    if(count %2 ==1) {
+                    if(count %2 ==1)
+                    {
                         String path = "src/DNS.dnsrelay.txt";
                         String word = "\n" + answerIpAddr.getHostAddress() + " " + ym;
-                        FileOutputStream wr =new FileOutputStream(path, true)
+                        FileOutputStream wr =new FileOutputStream(path, true);
                         FileChannel filechannel=wr.getChannel();
-                        FileLock lock=fileChannel.lock(0, Long.MAX_VALUE,true);
+                        FileLock lock=filechannel.lock();
                         BufferedWriter out = new BufferedWriter(
                                 new OutputStreamWriter(wr));
                         out.write(word);
                         out.close();
-                        Lock.release();
+                        lock.release();
                         filechannel.close();
                     }
                 }
@@ -109,12 +107,11 @@ public class UDPServer implements Runnable{
                 e.printStackTrace();
             }
             count++;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
+
     public HashMap<String ,String> map(){
+        String fileName = "src/dnsrelay.txt";
         File file = new File(fileName);
         FileInputStream fis;
         HashMap<String, String> Sites = new HashMap<>(100);
@@ -125,17 +122,15 @@ public class UDPServer implements Runnable{
 
             String line;
 
-                while ((line = br.readLine()) != null) {
-                    String[] contentList = line.split(" ");
-                    if (contentList.length < 2) {
-                        continue;
-                    }
-                    Sites.put(contentList[1], contentList[0]);
+            while ((line = br.readLine()) != null) {
+                String[] contentList = line.split(" ");
+                if (contentList.length < 2) {
+                    continue;
                 }
-                br.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }catch (IOException e){
+                Sites.put(contentList[1], contentList[0]);
+            }
+            br.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return Sites;
