@@ -1,23 +1,20 @@
+package DNS;
 import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
-
 import java.io.*;
 import java.net.*;
+import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
-/**
- * @author 21
- */
-public class UDPServer {
+public class UDPServer implements Runnable{
     private static DatagramSocket socket;
+    private HashMap<String,String> map;
     private FileLock fileLock;
     private FileChannel channel;
-
+    private String fileName = "src/dnsrelay.txt";
     public UDPServer() {
         //设置socket，监听端口53
         try {
@@ -25,16 +22,13 @@ public class UDPServer {
         } catch (SocketException e) {
             e.printStackTrace();
         }
-
-
     }
 
-    public void start() {
-
+    public void run() {
         System.out.println("Starting......\n");
         int count=0;
         while (true) {
-            HashMap<String, String> map = map();
+            this.map=map();
             System.out.println("=======================");
             try {
                 byte[] buffer = new byte[1024];
@@ -93,7 +87,7 @@ public class UDPServer {
                     socket.send(response);
                     System.out.println("socket:"+socket);
                     if(count %2 ==1) {
-                        String path = "src/dnsrelay.txt";
+                        String path = "src/DNS.dnsrelay.txt";
                         String word = "\n" + answerIpAddr.getHostAddress() + " " + ym;
                         BufferedWriter out = new BufferedWriter(
                                 new OutputStreamWriter(new FileOutputStream(path, true)));
@@ -112,10 +106,7 @@ public class UDPServer {
             count++;
             try {
                 if(fileLock!=null||channel!=null){
-
-                        fileLock.release();
-
-
+                    fileLock.release();
                     channel.close();
                 }
                 else{
@@ -128,7 +119,6 @@ public class UDPServer {
         }
     }
     public HashMap<String ,String> map(){
-        String fileName = "src/dnsrelay.txt";
         File file = new File(fileName);
         FileInputStream fis;
         HashMap<String, String> Sites = new HashMap<>(100);
@@ -141,15 +131,17 @@ public class UDPServer {
 
             String line;
 
-            while ((line = br.readLine()) != null) {
-                String[] contentList = line.split(" ");
-                if (contentList.length < 2) {
-                    continue;
+                while ((line = br.readLine()) != null) {
+                    String[] contentList = line.split(" ");
+                    if (contentList.length < 2) {
+                        continue;
+                    }
+                    Sites.put(contentList[1], contentList[0]);
                 }
-                Sites.put(contentList[1], contentList[0]);
-            }
-            br.close();
-        } catch (IOException e) {
+                br.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }catch (IOException e){
             e.printStackTrace();
         }
         return Sites;
