@@ -19,9 +19,7 @@ public class UDPServer implements Runnable{
     public void run() {
          System.out.println("=======================");
          System.out.println(Thread.currentThread().getName());
-         int count = 0;
                 try {
-
                     //输出客户端的dns请求数据
                     InetAddress sourceIpAddr = request.getAddress();
                     int sourcePort = request.getPort();
@@ -70,9 +68,7 @@ public class UDPServer implements Runnable{
                         DatagramPacket response = new DatagramPacket(buf, buf.length, sourceIpAddr, sourcePort);
                         socket.send(response);
                         System.out.println("socket:" + socket);
-                        if (count % 2 == 1) {
                             ipmap = update(ipmap, ym, answerIpAddr.getHostAddress());
-                        }
                     }
                     System.out.println(ipmap);
 
@@ -83,7 +79,6 @@ public class UDPServer implements Runnable{
                     System.out.println("IOException:");
                     e.printStackTrace();
                 }
-                count++;
     }
 
     public HashMap<String ,String> map(){
