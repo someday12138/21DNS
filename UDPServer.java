@@ -3,14 +3,12 @@ import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
 import java.io.*;
 import java.net.*;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.util.HashMap;
 
 
 public class UDPServer implements Runnable{
     private static DatagramSocket socket;
-
+    private HashMap<String ,String> ipmap=map();
     public UDPServer() {
         //设置socket，监听端口53
         try {
@@ -24,7 +22,6 @@ public class UDPServer implements Runnable{
         System.out.println("Starting......\n");
         int count=0;
         while (true) {
-            HashMap<String, String> map = map();
             System.out.println("=======================");
             try {
                 byte[] buffer = new byte[1024];
@@ -46,18 +43,18 @@ public class UDPServer implements Runnable{
                 String domain = indata.getQuestion().getName().toString();
                 System.out.println("domain = " + domain);
                 //解析域名
-                if(map.containsKey(ym)){
+                if(ipmap.containsKey(ym)){
 
-                    InetAddress answerIpAddr = InetAddress.getByName(map.get(ym));
+                    InetAddress answerIpAddr = InetAddress.getByName(ipmap.get(ym));
 
                     Message outdata = (Message)indata.clone();
-                    if(map.get(ym).contains("0.0.0.0")) {
+                    if(ipmap.get(ym).contains("0.0.0.0")) {
                         System.out.println("**********************************************************");
                         Header reply = outdata.getHeader();
                         reply.setRcode(3);
                         outdata.setHeader(reply);
                     }
-
+                    System.out.println("**********************************************************");
                     //由于接收到的请求为A类型，因此应答也为ARecord。查看Record类的继承，发现还有AAAARecord(ipv6)，CNAMERecord等
                     Record answer = new ARecord(question.getName(), question.getDClass(), 64, answerIpAddr);
                     outdata.addRecord(answer, Section.ANSWER);
@@ -67,8 +64,6 @@ public class UDPServer implements Runnable{
                     DatagramPacket response = new DatagramPacket(buf, buf.length, sourceIpAddr, sourcePort);
                     socket.send(response);
                     System.out.println("socket:" + socket);
-
-
                 }
                 else
                 {
@@ -85,19 +80,10 @@ public class UDPServer implements Runnable{
                     System.out.println("socket:"+socket);
                     if(count %2 ==1)
                     {
-                        String path = "src/DNS.dnsrelay.txt";
-                        String word = "\n" + answerIpAddr.getHostAddress() + " " + ym;
-                        FileOutputStream wr =new FileOutputStream(path, true);
-                        FileChannel filechannel=wr.getChannel();
-                        FileLock lock=filechannel.lock();
-                        BufferedWriter out = new BufferedWriter(
-                                new OutputStreamWriter(wr));
-                        out.write(word);
-                        out.close();
-                        lock.release();
-                        filechannel.close();
+                        ipmap=update(ipmap,ym,answerIpAddr.getHostAddress());
                     }
                 }
+                System.out.println(ipmap);
 
             } catch (SocketException e) {
                 System.out.println("SocketException:");
@@ -119,9 +105,7 @@ public class UDPServer implements Runnable{
             fis = new FileInputStream(file);
             InputStreamReader isr = new InputStreamReader(fis);
             BufferedReader br = new BufferedReader(isr);
-
             String line;
-
             while ((line = br.readLine()) != null) {
                 String[] contentList = line.split(" ");
                 if (contentList.length < 2) {
@@ -134,5 +118,9 @@ public class UDPServer implements Runnable{
             e.printStackTrace();
         }
         return Sites;
+    }
+    public synchronized HashMap<String ,String> update(HashMap<String ,String> ipmap,String domain, String ip){
+        ipmap.put(domain,ip);
+        return ipmap;
     }
 }
