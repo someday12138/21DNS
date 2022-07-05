@@ -5,7 +5,6 @@ import java.net.*;
 import java.util.HashMap;
 
 
-
 public class UDPServer implements Runnable{
     private final DatagramPacket request;
     private final DatagramSocket socket;
@@ -18,13 +17,9 @@ public class UDPServer implements Runnable{
     }
 
     public void run() {
-         {
-
-            System.out.println(Thread.currentThread().getName());
-            int count = 0;
-             {
-                System.out.println("=======================");
-
+         System.out.println("=======================");
+         System.out.println(Thread.currentThread().getName());
+         int count = 0;
                 try {
 
                     //输出客户端的dns请求数据
@@ -89,8 +84,6 @@ public class UDPServer implements Runnable{
                     e.printStackTrace();
                 }
                 count++;
-            }
-        }
     }
 
     public HashMap<String ,String> map(){
