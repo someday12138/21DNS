@@ -5,20 +5,23 @@ import java.net.*;
 import java.util.HashMap;
 
 
+
 public class UDPServer implements Runnable{
     private final DatagramPacket request;
     private final DatagramSocket socket;
+    private HashMap<String ,String> ipmap;
 
-
-    private HashMap<String ,String> ipmap=map();
-    public UDPServer(DatagramPacket p,DatagramSocket s) {
+    public UDPServer(DatagramPacket p,DatagramSocket s,HashMap<String ,String> map) {
         request = p;
         socket = s;
+        ipmap=map;
     }
 
     public void run() {
-         System.out.println("=======================");
-         System.out.println(Thread.currentThread().getName());
+        {
+            System.out.println(Thread.currentThread().getName());
+            {
+                System.out.println("=======================");
                 try {
                     //输出客户端的dns请求数据
                     InetAddress sourceIpAddr = request.getAddress();
@@ -29,16 +32,13 @@ public class UDPServer implements Runnable{
                     System.out.println("\nindata = " + indata);
                     String ym = indata.getQuestion().getName().toString();
                     ym = ym.substring(0, ym.length() - 1);
-                    System.out.println("ym:::" + ym);
                     Record question = indata.getQuestion();
                     System.out.println("question = " + question);
                     String domain = indata.getQuestion().getName().toString();
                     System.out.println("domain = " + domain);
                     //解析域名
                     if (ipmap.containsKey(ym)) {
-
                         InetAddress answerIpAddr = InetAddress.getByName(ipmap.get(ym));
-
                         Message outdata = (Message) indata.clone();
                         if (ipmap.get(ym).contains("0.0.0.0")) {
                             System.out.println("**********************************************************");
@@ -68,7 +68,8 @@ public class UDPServer implements Runnable{
                         DatagramPacket response = new DatagramPacket(buf, buf.length, sourceIpAddr, sourcePort);
                         socket.send(response);
                         System.out.println("socket:" + socket);
-                            ipmap = update(ipmap, ym, answerIpAddr.getHostAddress());
+                        System.out.println("UPdating............");
+                        update(ipmap, ym, answerIpAddr.getHostAddress());
                     }
                     System.out.println(ipmap);
 
@@ -79,33 +80,11 @@ public class UDPServer implements Runnable{
                     System.out.println("IOException:");
                     e.printStackTrace();
                 }
-    }
-
-    public HashMap<String ,String> map(){
-        String fileName = "src/dnsrelay.txt";
-        File file = new File(fileName);
-        FileInputStream fis;
-        HashMap<String, String> Sites = new HashMap<>(100);
-        try {
-            fis = new FileInputStream(file);
-            InputStreamReader isr = new InputStreamReader(fis);
-            BufferedReader br = new BufferedReader(isr);
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] contentList = line.split(" ");
-                if (contentList.length < 2) {
-                    continue;
-                }
-                Sites.put(contentList[1], contentList[0]);
             }
-            br.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return Sites;
     }
-    public synchronized HashMap<String ,String> update(HashMap<String ,String> ipmap,String domain, String ip){
-        ipmap.put(domain,ip);
-        return ipmap;
+    public synchronized void update(HashMap<String ,String> map,String domain, String ip){
+        map.put(domain,ip);
+        this.ipmap=map;
     }
 }
